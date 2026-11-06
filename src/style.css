@@ -1,0 +1,75 @@
+/* Arc-inspired macOS command surface. No rules target Zen's own UI. */
+#arc-command-bar {
+  --arc-surface: light-dark(rgb(248 248 250 / .84), rgb(24 24 24 / .84));
+  --arc-text: light-dark(#292a2e, #ceced0);
+  --arc-muted: light-dark(#949498, #96969f);
+  --arc-rule: light-dark(#0000000c, #ffffff0a);
+  --arc-selection: light-dark(#444143, #363333e8);
+  color-scheme: light dark;
+  background: var(--arc-surface);
+  backdrop-filter: blur(18px) saturate(1.1);
+  color: var(--arc-text);
+  border: 1px solid light-dark(#00000035, #ffffff24);
+  border-radius: 13px;
+  box-shadow: 0 24px 80px #00000030, 0 5px 18px #00000012, inset 0 1px 0 #ffffff15;
+  width: min(720px, calc(100vw - 64px));
+  max-height: calc(100vh - 16px);
+  box-sizing: border-box;
+  padding: 0;
+  position: fixed;
+  top: 18vh;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 2147483001;
+  overflow: hidden;
+  font: 13px -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+#arc-command-backdrop { position: fixed; inset: 0; background: transparent; z-index: 2147483000; }
+#arc-command-backdrop[hidden] { display: none; }
+#arc-command-bar .arc-input-wrap { display: flex; align-items: center; gap: 10px; min-height: 55px; padding: 0 14px; }
+#arc-command-bar .arc-search-mark { flex: 0 0 26px; width: 26px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--arc-text); }
+#arc-command-bar .arc-drag-handle, #arc-command-bar .arc-info { appearance: none; border: 0; padding: 0; margin: 0; background: transparent; color: inherit; box-shadow: none; }
+#arc-command-bar .arc-drag-handle { cursor: grab; touch-action: none; user-select: none; }
+#arc-command-bar[data-dragging] .arc-drag-handle { cursor: grabbing; }
+#arc-command-bar .arc-info { display: flex; align-items: center; justify-content: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; background: light-dark(#0000000a,#00000090); color: var(--arc-muted); cursor: pointer; }
+#arc-command-bar .arc-drag-handle:focus-visible, #arc-command-bar .arc-info:focus-visible { outline: 2px solid light-dark(#555,#bbb); outline-offset: 2px; border-radius: 4px; }
+#arc-command-bar .arc-svg { width: 16px; height: 16px; display: block; }
+#arc-command-input { flex: 1; min-width: 0; box-sizing: border-box; border: 0; border-radius: 0; padding: 14px 0; margin: 0; background: transparent; color: inherit; font: 500 18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif; line-height: 26px; outline: none; box-shadow: none; caret-color: var(--arc-text); }
+#arc-command-input::placeholder { color: var(--arc-muted); opacity: .74; }
+#arc-command-input:focus-visible { outline: none; }
+#arc-command-bar .arc-escape { color: var(--arc-muted); background: light-dark(#00000006, #ffffff09); border-radius: 4px; padding: 2px 5px; font-size: 10px; line-height: 16px; }
+#arc-command-results { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; max-height: min(54vh, 438px); margin: 0; padding: 6px 8px 8px; border-top: 1px solid var(--arc-rule); }
+#arc-command-results:empty { display: none; }
+#arc-command-bar .arc-row { display: flex; align-items: center; gap: 10px; min-height: 46px; box-sizing: border-box; padding: 8px 10px; border-radius: 6px; cursor: default; min-width: 0; }
+#arc-command-bar .arc-row[aria-selected="true"] { background: var(--arc-selection); color: #fff; }
+#arc-command-bar .arc-kind { flex: 0 0 23px; width: 23px; height: 23px; display: flex; align-items: center; justify-content: center; color: var(--arc-muted); }
+#arc-command-bar .arc-row[aria-selected="true"] .arc-kind { color: #ffffffdb; }
+#arc-command-bar .arc-google { color: #4285f4; background: light-dark(#ffffff, #ffffffed); border-radius: 4px; font: 700 16px Arial, sans-serif; width: 21px; height: 21px; display: flex; align-items: center; justify-content: center; }
+#arc-command-bar .arc-favicon { display: block; width: 20px; height: 20px; object-fit: contain; border-radius: 4px; }
+#arc-command-help { padding: 12px 20px; border-top: 1px solid var(--arc-rule); color: var(--arc-muted); font-size: 12px; line-height: 1.5; }
+#arc-command-help[hidden] { display: none; }
+#arc-command-bar .arc-text { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1; }
+#arc-command-bar .arc-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; line-height: 20px; font-weight: 500; }
+#arc-command-bar .arc-row[aria-selected="true"] .arc-label { font-weight: 600; }
+#arc-command-bar .arc-sub { font-size: 12px; color: var(--arc-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 34%; }
+#arc-command-bar .arc-row[aria-selected="true"] .arc-sub { color: #ffffffad; }
+#arc-command-bar .arc-action { color: var(--arc-muted); font-weight: 500; font-size: 11px; white-space: nowrap; margin-left: 5px; }
+#arc-command-bar .arc-row[aria-selected="true"] .arc-action { color: #fffffff0; font-weight: 600; }
+#arc-command-bar .arc-enter { display: flex; align-items: center; justify-content: center; flex: 0 0 22px; width: 22px; height: 22px; border-radius: 4px; background: light-dark(#00000005, #ffffff09); color: var(--arc-muted); }
+#arc-command-bar .arc-row[aria-selected="true"] .arc-enter { background: #fffffff2; color: var(--arc-selection); }
+/* Live announcements stay available without adding dashboard-style footer chrome. */
+#arc-command-bar .arc-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#arc-command-bar .arc-status[data-state="error"], #arc-command-bar .arc-status[data-state="busy"] { position: static; width: auto; height: auto; margin: 0; padding: 10px 20px 13px; overflow: visible; clip-path: none; white-space: normal; color: var(--arc-muted); font-size: 12px; border-top: 1px solid var(--arc-rule); }
+#arc-command-bar .arc-status[data-state="error"] { color: light-dark(#9a3434, #f3a6a6); }
+@media (max-width: 680px) {
+  #arc-command-bar { width: calc(100vw - 24px); top: 12vh; }
+  #arc-command-bar .arc-action { font-size: 10px; }
+  #arc-command-bar .arc-sub { display: none; }
+}
+@media (forced-colors: active) {
+  #arc-command-bar { background: Canvas; backdrop-filter: none; color: CanvasText; border: 1px solid CanvasText; }
+  #arc-command-input { color: CanvasText; caret-color: CanvasText; }
+  #arc-command-bar .arc-row[aria-selected="true"] { background: Highlight; color: HighlightText; }
+  #arc-command-bar .arc-row[aria-selected="true"] .arc-enter { background: Canvas; color: CanvasText; }
+}

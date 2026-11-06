@@ -1,0 +1,29 @@
+{
+  "id": "arc-command-bar",
+  "name": "Arc Command Bar",
+  "description": "No-blank-tab, tab-first New Tab command bar for Zen Beta. Independent of the native URL bar.",
+  "author": "S-Hristov",
+  "version": "1.0.2",
+  "createdAt": "2026-11-06",
+  "updatedAt": "2026-11-06",
+  "fork": [
+    "zen"
+  ],
+  "tags": [
+    "tabs",
+    "command-bar",
+    "arc",
+    "productivity"
+  ],
+  "preferences": "preferences.json",
+  "supportsUnload": true,
+  "scripts": {
+    "arc-command-bar.uc.js": {
+      "include": [
+        "chrome://browser/content/browser.xhtml"
+      ]
+    }
+  },
+  "homepage": "https://github.com/S-Hristov/zen-arc-command-bar",
+  "readme": "https://github.com/S-Hristov/zen-arc-command-bar/blob/main/README.md"
+}

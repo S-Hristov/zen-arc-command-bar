@@ -1,0 +1,522 @@
+[
+  {
+    "type": "separator",
+    "label": "Arc Command Bar \u00b7 changes apply immediately"
+  },
+  {
+    "type": "checkbox",
+    "property": "arc-command-bar.enabled",
+    "label": "Replace native New Tab command (Cmd+T)",
+    "defaultValue": true
+  },
+  {
+    "type": "checkbox",
+    "property": "arc-command-bar.tabFirst",
+    "label": "Select strong existing-tab matches first",
+    "defaultValue": true
+  },
+  {
+    "type": "checkbox",
+    "property": "arc-command-bar.allSpaces",
+    "label": "Search across all Spaces and windows (same private mode)",
+    "defaultValue": false
+  },
+  {
+    "type": "checkbox",
+    "property": "arc-command-bar.fuzzy",
+    "label": "Show conservative fuzzy matches (never auto-selected)",
+    "defaultValue": true
+  },
+  {
+    "type": "checkbox",
+    "property": "arc-command-bar.exactMatches",
+    "label": "Give exact titles extra priority",
+    "defaultValue": true
+  },
+  {
+    "type": "checkbox",
+    "property": "arc-command-bar.currentSpaceFirst",
+    "label": "Prefer current Space on equal match scores",
+    "defaultValue": true
+  },
+  {
+    "type": "checkbox",
+    "property": "arc-command-bar.includeDiscarded",
+    "label": "Include discarded/unloaded tabs",
+    "defaultValue": true
+  },
+  {
+    "type": "checkbox",
+    "property": "arc-command-bar.debug",
+    "label": "Debug warnings (never logs queries, titles or URLs)",
+    "defaultValue": false
+  },
+  {
+    "type": "string",
+    "property": "arc-command-bar.searchEngine",
+    "label": "Installed search engine name; empty = browser default",
+    "defaultValue": "Google"
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.minQueryLength",
+    "label": "Minimum query length",
+    "value": "number",
+    "defaultValue": 2,
+    "options": [
+      {
+        "label": "1",
+        "value": 1
+      },
+      {
+        "label": "2",
+        "value": 2
+      },
+      {
+        "label": "3",
+        "value": 3
+      },
+      {
+        "label": "4",
+        "value": 4
+      }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.maxResults",
+    "label": "Maximum tab matches (search always retained)",
+    "value": "number",
+    "defaultValue": 8,
+    "options": [
+      {
+        "label": "5",
+        "value": 5
+      },
+      {
+        "label": "8",
+        "value": 8
+      },
+      {
+        "label": "12",
+        "value": 12
+      },
+      {
+        "label": "20",
+        "value": 20
+      },
+      {
+        "label": "30",
+        "value": 30
+      }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.minScore",
+    "label": "Auto-selection confidence threshold",
+    "value": "number",
+    "defaultValue": 80,
+    "options": [
+      {
+        "label": "60",
+        "value": 60
+      },
+      {
+        "label": "70",
+        "value": 70
+      },
+      {
+        "label": "80",
+        "value": 80
+      },
+      {
+        "label": "90",
+        "value": 90
+      },
+      {
+        "label": "100",
+        "value": 100
+      },
+      {
+        "label": "120",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.ambiguityGap",
+    "label": "Required gap for weak partial matches",
+    "value": "number",
+    "defaultValue": 8,
+    "options": [
+      {
+        "label": "0",
+        "value": 0
+      },
+      {
+        "label": "4",
+        "value": 4
+      },
+      {
+        "label": "8",
+        "value": 8
+      },
+      {
+        "label": "12",
+        "value": 12
+      },
+      {
+        "label": "20",
+        "value": 20
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "label": "Ranking weights \u00b7 advanced (ties: current Space, recency, stable ID)"
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.exactWeight",
+    "label": "Exact title",
+    "value": "number",
+    "defaultValue": 120,
+    "options": [
+      {
+        "label": "0",
+        "value": 0
+      },
+      {
+        "label": "40",
+        "value": 40
+      },
+      {
+        "label": "56",
+        "value": 56
+      },
+      {
+        "label": "70",
+        "value": 70
+      },
+      {
+        "label": "80",
+        "value": 80
+      },
+      {
+        "label": "84",
+        "value": 84
+      },
+      {
+        "label": "90",
+        "value": 90
+      },
+      {
+        "label": "96",
+        "value": 96
+      },
+      {
+        "label": "100",
+        "value": 100
+      },
+      {
+        "label": "105",
+        "value": 105
+      },
+      {
+        "label": "120",
+        "value": 120
+      },
+      {
+        "label": "150",
+        "value": 150
+      }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.prefixWeight",
+    "label": "Title prefix / title word prefix (-6)",
+    "value": "number",
+    "defaultValue": 105,
+    "options": [
+      {
+        "label": "0",
+        "value": 0
+      },
+      {
+        "label": "40",
+        "value": 40
+      },
+      {
+        "label": "56",
+        "value": 56
+      },
+      {
+        "label": "70",
+        "value": 70
+      },
+      {
+        "label": "80",
+        "value": 80
+      },
+      {
+        "label": "84",
+        "value": 84
+      },
+      {
+        "label": "90",
+        "value": 90
+      },
+      {
+        "label": "96",
+        "value": 96
+      },
+      {
+        "label": "100",
+        "value": 100
+      },
+      {
+        "label": "105",
+        "value": 105
+      },
+      {
+        "label": "120",
+        "value": 120
+      },
+      {
+        "label": "150",
+        "value": 150
+      }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.domainWeight",
+    "label": "Domain exact (+6), prefix, partial (-12)",
+    "value": "number",
+    "defaultValue": 96,
+    "options": [
+      {
+        "label": "0",
+        "value": 0
+      },
+      {
+        "label": "40",
+        "value": 40
+      },
+      {
+        "label": "56",
+        "value": 56
+      },
+      {
+        "label": "70",
+        "value": 70
+      },
+      {
+        "label": "80",
+        "value": 80
+      },
+      {
+        "label": "84",
+        "value": 84
+      },
+      {
+        "label": "90",
+        "value": 90
+      },
+      {
+        "label": "96",
+        "value": 96
+      },
+      {
+        "label": "100",
+        "value": 100
+      },
+      {
+        "label": "105",
+        "value": 105
+      },
+      {
+        "label": "120",
+        "value": 120
+      },
+      {
+        "label": "150",
+        "value": 150
+      }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.partialWeight",
+    "label": "Partial title",
+    "value": "number",
+    "defaultValue": 84,
+    "options": [
+      {
+        "label": "0",
+        "value": 0
+      },
+      {
+        "label": "40",
+        "value": 40
+      },
+      {
+        "label": "56",
+        "value": 56
+      },
+      {
+        "label": "70",
+        "value": 70
+      },
+      {
+        "label": "80",
+        "value": 80
+      },
+      {
+        "label": "84",
+        "value": 84
+      },
+      {
+        "label": "90",
+        "value": 90
+      },
+      {
+        "label": "96",
+        "value": 96
+      },
+      {
+        "label": "100",
+        "value": 100
+      },
+      {
+        "label": "105",
+        "value": 105
+      },
+      {
+        "label": "120",
+        "value": 120
+      },
+      {
+        "label": "150",
+        "value": 150
+      }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.urlWeight",
+    "label": "Partial URL",
+    "value": "number",
+    "defaultValue": 70,
+    "options": [
+      {
+        "label": "0",
+        "value": 0
+      },
+      {
+        "label": "40",
+        "value": 40
+      },
+      {
+        "label": "56",
+        "value": 56
+      },
+      {
+        "label": "70",
+        "value": 70
+      },
+      {
+        "label": "80",
+        "value": 80
+      },
+      {
+        "label": "84",
+        "value": 84
+      },
+      {
+        "label": "90",
+        "value": 90
+      },
+      {
+        "label": "96",
+        "value": 96
+      },
+      {
+        "label": "100",
+        "value": 100
+      },
+      {
+        "label": "105",
+        "value": 105
+      },
+      {
+        "label": "120",
+        "value": 120
+      },
+      {
+        "label": "150",
+        "value": 150
+      }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "property": "arc-command-bar.fuzzyWeight",
+    "label": "One typo, never auto-selected",
+    "value": "number",
+    "defaultValue": 56,
+    "options": [
+      {
+        "label": "0",
+        "value": 0
+      },
+      {
+        "label": "40",
+        "value": 40
+      },
+      {
+        "label": "56",
+        "value": 56
+      },
+      {
+        "label": "70",
+        "value": 70
+      },
+      {
+        "label": "80",
+        "value": 80
+      },
+      {
+        "label": "84",
+        "value": 84
+      },
+      {
+        "label": "90",
+        "value": 90
+      },
+      {
+        "label": "96",
+        "value": 96
+      },
+      {
+        "label": "100",
+        "value": 100
+      },
+      {
+        "label": "105",
+        "value": 105
+      },
+      {
+        "label": "120",
+        "value": 120
+      },
+      {
+        "label": "150",
+        "value": 150
+      }
+    ]
+  }
+]
