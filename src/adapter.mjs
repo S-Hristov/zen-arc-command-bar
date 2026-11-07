@@ -71,7 +71,7 @@ export function newTabContext(win) {
 
 export async function submitAction(win, action, context, services, isAlive = () => true) {
   let url, postData = null;
-  if (action.type === "url") url = action.url;
+  if (action.type === "url" || action.type === "history") url = action.url;
   else if (action.type === "search") {
     await services.search.init();
     if (!isAlive()) return;

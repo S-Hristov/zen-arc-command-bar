@@ -114,6 +114,62 @@ def install(profile, apply=False):
     print(f"Installed. Backup: {backup}\nStart Zen. Enable unverified JS in Sine if needed; then restart once.")
 
 
+def upgrade(profile, apply=False):
+    mods, _ = ensure_safe(profile); check_hashes()
+    destination = mods.parent / MOD_ID
+    manifest = json.loads((ROOT / "theme.json").read_text())
+
+    def read_owned():
+        current_mods, _ = ensure_safe(profile)
+        raw = current_mods.read_bytes()
+        registry = json.loads(raw)
+        entry = registry.get(MOD_ID)
+        if not isinstance(entry, dict) or entry.get("id") != MOD_ID or entry.get("no-updates") is not True or entry.get("origin"):
+            raise ValueError("Not a standalone local installation. Update through Sine instead.")
+        if not destination.is_dir() or {p.name for p in destination.iterdir()} != {*FILES, MARKER}:
+            raise ValueError("Unexpected mod directory contents; refusing to replace.")
+        if any(p.is_symlink() or not p.is_file() for p in destination.iterdir()):
+            raise ValueError("Unexpected or symlinked mod file; refusing to replace.")
+        marker = json.loads((destination / MARKER).read_text())
+        theme = json.loads((destination / "theme.json").read_text())
+        if marker.get("id") != MOD_ID or set(marker.get("files", [])) != set(FILES) or theme.get("id") != MOD_ID:
+            raise ValueError("Mod ownership marker or manifest did not match.")
+        if theme.get("version") != entry.get("version"):
+            raise ValueError("Installed manifest and registry versions do not agree.")
+        return raw, registry, theme
+
+    _, registry, theme = read_owned()
+    print(f"Upgrade {destination} from {theme['version']} to {manifest['version']}; preserve preferences and other mods.")
+    if not apply:
+        return
+    with lock_closed_profile(profile):
+        raw, registry, theme = read_owned()
+        # Do not convert a local installation into a remote Sine registration.
+        keys = ("version", "description", "updatedAt")
+        metadata = {key: manifest[key] for key in keys if key in manifest}
+        theme.update(metadata)
+        registry[MOD_ID].update(metadata)
+        stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+        previous = destination.with_name(f".{MOD_ID}.previous.{stamp}")
+        with tempfile.TemporaryDirectory(prefix=".arc-upgrade-", dir=mods.parent) as temp:
+            replacement = Path(temp) / "new"
+            replacement.mkdir()
+            for name in FILES:
+                shutil.copy2(ROOT / name, replacement / name)
+            (replacement / "theme.json").write_text(json.dumps(theme, indent=2) + "\n")
+            (replacement / MARKER).write_text(json.dumps({"id": MOD_ID, "version": theme["version"], "files": list(FILES)}))
+            os.rename(destination, previous)
+            try:
+                os.rename(replacement, destination)
+                backup = write_registry(mods, registry, raw)
+            except BaseException:
+                if destination.exists():
+                    os.rename(destination, replacement)
+                os.rename(previous, destination)
+                raise
+    print(f"Upgraded. Mod backup: {previous}\nRegistry backup: {backup}\nStart Zen to load the update.")
+
+
 def uninstall(profile, apply=False):
     mods, registry = ensure_safe(profile)
     destination = mods.parent / MOD_ID
@@ -131,14 +187,14 @@ def uninstall(profile, apply=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["install", "uninstall"])
+    parser.add_argument("action", choices=["install", "upgrade", "uninstall"])
     parser.add_argument("--profile", required=True, type=Path, help="Absolute profile ROOT; not Local Directory")
     parser.add_argument("--apply", action="store_true", help="Actually change this profile; otherwise dry run")
     parser.add_argument("--confirm-zen-closed", action="store_true")
     args = parser.parse_args()
     if args.apply and not args.confirm_zen_closed:
         parser.error("--apply requires --confirm-zen-closed. Quit Zen with Cmd+Q first.")
-    try: (install if args.action == "install" else uninstall)(args.profile, args.apply)
+    try: {"install": install, "upgrade": upgrade, "uninstall": uninstall}[args.action](args.profile, args.apply)
     except (ValueError, OSError, json.JSONDecodeError) as error:
         parser.exit(1, f"Refused: {error}\n")
 

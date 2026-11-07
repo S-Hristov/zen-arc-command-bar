@@ -33,6 +33,15 @@
     "new search uses active Space container",
     "full URL selects navigation",
     "URL action uses native trusted new-tab navigation",
+    "recent visited page ranks first without an open tab",
+    "history shows alternate pages and retains literal search",
+    "inline autocomplete selects only the suffix",
+    "Arrow Down restores the literal query and selects Search",
+    "deleting a suffix does not reinsert it",
+    "history action opens the exact URL in the active Space container",
+    "stale history results cannot replace a newer query",
+    "turning off native history suggestions removes rows and suffix",
+    "private context does not schedule a history query",
     "real native navigation creates exactly one tab",
     "real new tab has active Space container",
     "Cmd+W invokes native close exactly once without stray tab",
@@ -51,6 +60,6 @@
     "native WebDriver Cmd+L focuses unchanged URL bar",
     "real pointer drag moves chrome overlay and releases capture"
   ],
-  "browser": "Zen 1.24.1b / macOS / headless disposable profile",
+  "browser": "Zen 1.24.1b / headless disposable profile",
   "sine_lifecycle": "script injection and unload callback emulated; full Sine UI manual"
 }

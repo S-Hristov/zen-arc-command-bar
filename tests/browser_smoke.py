@@ -252,6 +252,62 @@ def run(binary, scratch=None):
                       await bar.execute();
                       assert(linkCalls[1][0] === 'https://example.com/arc-test' && linkCalls[1][1] === 'tab', 'URL action uses native trusted new-tab navigation');
                     } finally { window.openTrustedLinkIn = openLink; }
+                    const { PlacesUtils } = ChromeUtils.importESModule("resource://gre/modules/PlacesUtils.sys.mjs");
+                    const visited = 'https://studio-arc-fixture.invalid/projects/team';
+                    const otherVisit = 'https://studio-arc-fixture.invalid/projects/review';
+                    await PlacesUtils.history.insert({url: otherVisit, title: 'Review history fixture',
+                      visits:[{date:new Date(Date.now() - 60000)}]});
+                    await PlacesUtils.history.insert({url: visited, title: 'Studio history fixture', visits:[{date:new Date()}]});
+                    Services.prefs.setBoolPref('browser.urlbar.suggest.history', true);
+                    Services.prefs.setBoolPref('browser.urlbar.autoFill', true);
+                    const typeQuery = (query, inputType = 'insertText') => {
+                      bar.input.value = query;
+                      bar.input.setSelectionRange(query.length, query.length);
+                      bar.input.dispatchEvent(new InputEvent('input', {inputType, bubbles:true}));
+                    };
+                    const waitForHistory = async () => {
+                      for (let i = 0; i < 100; i++) {
+                        if (bar.historyRequest?.ready) return;
+                        await new Promise(resolve => setTimeout(resolve, 20));
+                      }
+                      throw new Error('History lookup did not finish');
+                    };
+                    bar.open(); typeQuery('studi'); await waitForHistory();
+                    assert(bar.model.selected?.url === visited && bar.model.selected?.type === 'history',
+                      'recent visited page ranks first without an open tab');
+                    assert(bar.model.actions[1]?.query === 'studi' && bar.model.actions.some(a => a.url === otherVisit),
+                      'history shows alternate pages and retains literal search');
+                    assert(bar.input.value === 'studio-arc-fixture.invalid/projects/team' &&
+                      bar.input.selectionStart === 5 && bar.input.selectionEnd === bar.input.value.length,
+                      'inline autocomplete selects only the suffix');
+                    const down = () => bar.input.dispatchEvent(new KeyboardEvent('keydown', {key:'ArrowDown', bubbles:true,cancelable:true}));
+                    down();
+                    assert(bar.input.value === 'studi' && bar.model.selected.type === 'search', 'Arrow Down restores the literal query and selects Search');
+                    bar.close(); bar.open(); typeQuery('studi'); await waitForHistory();
+                    typeQuery('studi','deleteContentBackward');
+                    assert(bar.input.value === 'studi' && bar.model.selected.type === 'search',
+                      'deleting a suffix does not reinsert it');
+                    typeQuery('stud'); await waitForHistory();
+                    const historyCalls = [];
+                    window.openTrustedLinkIn = (...args) => historyCalls.push(args);
+                    try {
+                      await bar.execute();
+                      assert(historyCalls[0]?.[0] === visited &&
+                        historyCalls[0]?.[2]?.userContextId === gZenWorkspaces.getCurrentSpaceContainerId(),
+                        'history action opens the exact URL in the active Space container');
+                    } finally { window.openTrustedLinkIn = openLink; }
+                    bar.open(); typeQuery('studi'); typeQuery('qzx-no-visit'); await waitForHistory();
+                    assert(bar.model.actions.length === 1 && bar.model.selected.query === 'qzx-no-visit',
+                      'stale history results cannot replace a newer query');
+                    typeQuery('studi'); await waitForHistory();
+                    Services.prefs.setBoolPref('browser.urlbar.suggest.history', false);
+                    assert(!bar.historyRequest && bar.input.value === 'studi' && !bar.model.actions.some(a => a.type === 'history'),
+                      'turning off native history suggestions removes rows and suffix');
+                    Services.prefs.setBoolPref('browser.urlbar.suggest.history', true);
+                    bar.close(); bar.open(); bar.context.isPrivate = true;
+                    typeQuery('studi');
+                    assert(!bar.historyRequest && !bar.model.actions.some(a => a.type === 'history'), 'private context does not schedule a history query');
+                    bar.close();
                     const directCount = count();
                     const destinationContainer = gZenWorkspaces.getCurrentSpaceContainerId();
                     bar.open(); bar.input.value = 'about:downloads'; bar.refresh(); await bar.execute();

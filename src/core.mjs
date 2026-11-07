@@ -1,6 +1,6 @@
 // Pure matching and action model. No browser APIs, network, or persisted history.
 export const DEFAULTS = Object.freeze({
-  enabled: true, tabFirst: true, allSpaces: false, minQueryLength: 2,
+  enabled: true, tabFirst: true, allSpaces: false, historySuggestions: true, minQueryLength: 2,
   fuzzy: true, exactMatches: true, currentSpaceFirst: true,
   includeDiscarded: true, debug: false, maxResults: 8, minScore: 80,
   ambiguityGap: 8, searchEngine: "Google",

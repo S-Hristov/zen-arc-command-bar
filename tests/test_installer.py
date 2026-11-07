@@ -37,6 +37,37 @@ class InstallerTests(unittest.TestCase):
             installer.uninstall(self.profile, True)
             self.assertEqual(json.loads(self.mods.read_text()), self.other)
             self.assertEqual(len(list(self.mods.parent.glob("mods.json.arc-command-bar.*.bak"))), 2)
+    def test_upgrade_preserves_registration_and_backs_up_existing_files(self):
+        with mock.patch.object(installer, "lock_closed_profile", lambda _: contextlib.nullcontext()):
+            installer.install(self.profile, True)
+            target = self.mods.parent / installer.MOD_ID
+            script = target / "arc-command-bar.uc.js"
+            script.write_text("// previous fixture")
+            before = json.loads(self.mods.read_text())
+            before[installer.MOD_ID]["enabled"] = False
+            before[installer.MOD_ID].pop("homepage", None)
+            self.mods.write_text(json.dumps(before))
+            installer.upgrade(self.profile, True)
+            data = json.loads(self.mods.read_text())
+            self.assertEqual(data["other"], self.other["other"])
+            self.assertFalse(data[installer.MOD_ID]["enabled"])
+            self.assertNotIn("homepage", data[installer.MOD_ID])
+            self.assertEqual(script.read_bytes(), (ROOT / script.name).read_bytes())
+            previous, = self.mods.parent.glob(".arc-command-bar.previous.*")
+            self.assertEqual((previous / script.name).read_text(), "// previous fixture")
+
+    def test_upgrade_rolls_back_if_registry_write_fails(self):
+        with mock.patch.object(installer, "lock_closed_profile", lambda _: contextlib.nullcontext()):
+            installer.install(self.profile, True)
+            target = self.mods.parent / installer.MOD_ID / "arc-command-bar.uc.js"
+            target.write_text("// previous fixture")
+            before = self.mods.read_bytes()
+            with mock.patch.object(installer, "write_registry", side_effect=ValueError("fixture")):
+                with self.assertRaises(ValueError):
+                    installer.upgrade(self.profile, True)
+            self.assertEqual(target.read_text(), "// previous fixture")
+            self.assertEqual(self.mods.read_bytes(), before)
+
     def test_no_sine_refused(self):
         self.mods.unlink()
         with self.assertRaises(ValueError): installer.install(self.profile)

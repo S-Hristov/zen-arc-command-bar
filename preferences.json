@@ -23,6 +23,12 @@
   },
   {
     "type": "checkbox",
+    "property": "arc-command-bar.historySuggestions",
+    "label": "Suggest local browsing history (profile-wide; never in private windows)",
+    "defaultValue": true
+  },
+  {
+    "type": "checkbox",
     "property": "arc-command-bar.fuzzy",
     "label": "Show conservative fuzzy matches (never auto-selected)",
     "defaultValue": true

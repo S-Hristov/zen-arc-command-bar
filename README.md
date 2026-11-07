@@ -18,7 +18,7 @@ Sine must explicitly permit unverified JavaScript; that permission permits other
 
 Requires existing Sine with a valid `chrome/sine-mods/mods.json`, Python 3, and Zen fully quit when applying. No npm dependencies; Node is only needed to rebuild/test.
 
-1. Extract `arc-command-bar-1.0.2.zip` to a normal folder. Read the code/security notes: this is **privileged browser JavaScript**, not a sandboxed WebExtension.
+1. Extract `zen-arc-command-bar-1.1.0.zip` to a normal folder. Read the code/security notes: this is **privileged browser JavaScript**, not a sandboxed WebExtension.
 2. In Zen, open `about:profiles`. Copy the **Root Directory** of the intended profile, not Local Directory. Do not guess the default profile path.
 3. Quit **all Zen windows with Cmd+Q**. Do not just close one window.
 4. Open Terminal in the extracted `arc-command-bar` folder. Preview first:
@@ -39,6 +39,8 @@ Requires existing Sine with a valid `chrome/sine-mods/mods.json`, Python 3, and 
 
 Installer behavior: dry-run by default; rejects missing Sine, existing mod IDs/folders, symlinked managed paths, and a running/locked profile. Every registry write has a timestamped backup. It changes only its own registry entry and its new mod directory. It does not install Sine, modify its loader, or overwrite existing browser configuration.
 
+To upgrade an existing **local** installation owned by this installer, use the same commands with `upgrade` instead of `install`. It backs up the old mod and registry and preserves all settings. Repository-installed copies should be updated through Sine once the new version is published.
+
 ## Use
 
 | Key | Action |
@@ -54,7 +56,13 @@ The standard **New Tab menu command** also opens this bar. Toolbar/new-tab butto
 
 The first row is both visibly selected (`aria-selected`) and the selection model's action. Enter dispatches that exact object. There is no CSS-only reorder or hidden Google heuristic.
 
-Switches use the original tab element. Full HTTP(S) URLs and plausible host/path inputs get a direct-navigation action. Text otherwise searches. The bar intentionally has no remote suggestions, Places/history/bookmark autocomplete, commands from other mods, keyword aliases, or arbitrary custom-protocol execution. Use Cmd+L for the complete native navigation interface.
+Switches use the original tab element. Full HTTP(S) URLs and plausible host/path inputs get a direct-navigation action. Text otherwise searches. The bar intentionally has no remote suggestions, bookmark-only results, commands from other mods, keyword aliases, or arbitrary custom-protocol execution. Use Cmd+L for the complete native navigation interface.
+
+## History autocomplete
+
+Type a few letters of a site or page you visited in Zen. Matching visited pages show their title and address. When a URL prefix is the best action, its remaining suffix is selected inline; Enter opens that exact visited page. Arrow Down moves to Search, which uses only the characters you typed. Strong open-tab matches and explicit URLs keep priority. Title-only history matches are selectable but never auto-open.
+
+History uses the most recent 5,000 Places entries with visit dates, including history already synced into this Zen profile. It is **profile-wide**, not Space/container-specific, and does not import Arc history. Selecting a result opens a new tab in the active Space’s container. Private windows never query history. Turn off **Suggest local browsing history** in Sine or the native history suggestion preference to disable it. Zen’s native autofill preference controls inline completion. Typing never sends history or suggestions over the network.
 
 ## Settings
 
@@ -154,7 +162,7 @@ Compact single-line result rows, borderless search field, macOS typography, righ
 
 Matches the supplied first reference: translucent neutral-dark surface, gray selection (no Zen purple accent), compact single-line tab rows with cached site favicons, and info affordance. Text/icons stay opaque; forced-colors mode remains opaque and readable. The full-page dimmer is removed so underlying text stays readable.
 
-With an empty query, up to six recently accessed **open** tabs appear, excluding the active tab. The existing same-private-mode window filter, Space preference, discarded-tab setting, original tab identity, and container boundaries remain in force. This does not read browsing-history autocomplete or fetch online suggestions. Site icons use Gecko's local `page-icon:` cache with a generic fallback; the command bar never contacts a favicon host itself.
+With an empty query, up to six recently accessed **open** tabs appear, excluding the active tab. The existing same-private-mode window filter, Space preference, discarded-tab setting, original tab identity, and container boundaries remain in force. Empty queries never query browsing history or fetch online suggestions. Site icons use Gecko's local `page-icon:` cache with a generic fallback; the command bar never contacts a favicon host itself.
 
 Drag the search icon to reposition within Zen's window. Pointer capture keeps dragging stable outside the handle. Position survives close/reopen for this browser window, not a browser restart; nothing is persisted. Double-click the search icon to center again. Tab/Shift+Tab reaches the handle and help; arrow keys on the handle move by 10px (Shift: 40px). Browser resizing and result-list growth constrain the bar back onscreen. Escape/close/unload cancel dragging and release capture. Search input selection and result clicks do not start a drag.
 

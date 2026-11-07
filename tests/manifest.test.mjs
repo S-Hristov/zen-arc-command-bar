@@ -44,11 +44,12 @@ test("Arc restyle keeps semantics, drops debug-style header/footer, preserves er
 });
 
 
-test("glass and recent tabs retain no history/network collection; drag cleans up",()=>{
+test("favicons stay local, history is private-window gated, and drag cleans up",()=>{
  const source=readFileSync(new URL("src/browser.mjs",root),"utf8");
- assert.ok(source.includes('page-icon:${action.tab.url}'));
+ assert.ok(source.includes('page-icon:${iconURL}'));
+ assert.match(source, /historySuggestions && !this.context.isPrivate/u);
  assert.ok(source.includes('this.endDrag(); this.help.hidden = true'));
  assert.ok(source.includes('setPointerCapture(e.pointerId)'));
  assert.ok(source.includes('releasePointerCapture(drag.id)'));
- assert.ok(!/localStorage|PlacesUtils|FormHistory|SessionStore/u.test(source));
+ assert.ok(!/localStorage|FormHistory|SessionStore/u.test(source));
 });

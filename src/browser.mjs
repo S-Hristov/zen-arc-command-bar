@@ -1,15 +1,19 @@
 import { DEFAULTS, prepare, rankTabs, recentTabs, clampBarPosition, makeActions, SelectionModel } from "./core.mjs";
 import { storedTabs, validTab, destinationSpace, activateTab, newTabContext, submitAction } from "./adapter.mjs";
+import { lookupHistory, addHistoryActions } from "./history.mjs";
 
 class ArcBar {
-  constructor(win, services, privateUtils, searchService) {
+  constructor(win, services, privateUtils, searchService, getPlaces) {
     this.win = win; this.services = services; this.privateUtils = privateUtils;
     this.navigationServices = { search: searchService, scriptSecurityManager: services.scriptSecurityManager };
+    this.getPlaces = getPlaces;
     this.document = win.document; this.model = new SelectionModel();
     this.disposed = false; this.opened = false; this.busy = false; this.composing = false;
     this.generation = 0; this.ids = new WeakMap(); this.nextId = 0; this.windowIds = new WeakMap(); this.nextWindowId = 0;
     this.cleanups = []; this.sessionCleanups = []; this.index = []; this.dirty = true;
     this.position = null; this.drag = null;
+    this.historyRequest = null; this.historyTimer = null; this.historyRunning = false;
+    this.completion = null; this.allowInline = false;
     this.onCommand = this.onCommand.bind(this); this.onInputKey = this.onInputKey.bind(this);
     this.settings = this.readSettings();
   }
@@ -42,8 +46,10 @@ class ArcBar {
       if (!this.settings.enabled) this.close();
       else if (this.opened) this.refresh();
     } };
-    this.services.prefs.addObserver("arc-command-bar.", observer);
-    this.cleanups.push(() => this.services.prefs.removeObserver("arc-command-bar.", observer));
+    for (const pref of ["arc-command-bar.", "browser.urlbar.suggest.history", "browser.urlbar.autoFill"]) {
+      this.services.prefs.addObserver(pref, observer);
+      this.cleanups.push(() => this.services.prefs.removeObserver(pref, observer));
+    }
   }
   onCommand(event) {
     // Honor Zen/Firefox's native key dispatch and about:keyboard customization.
@@ -90,14 +96,14 @@ class ArcBar {
     const input = this.element("input", {
       id: "arc-command-input", type: "text", role: "combobox", autocomplete: "off",
       spellcheck: "false", "aria-label": "Find a tab, search, or enter a URL",
-      "aria-autocomplete": "list", "aria-expanded": "true", "aria-controls": "arc-command-results",
+      "aria-autocomplete": "both", "aria-expanded": "true", "aria-controls": "arc-command-results",
       placeholder: "Search or Enter URL…",
     });
     const list = this.element("div", { id: "arc-command-results", role: "listbox", "aria-label": "Actions" });
     const status = this.element("div", { class: "arc-status", role: "status", "aria-live": "polite" }, "Type to find an open tab. No new tab until you navigate.");
     const help = this.element("button", { type: "button", class: "arc-info", "aria-label": "Command bar help", "aria-expanded": "false", "aria-controls": "arc-command-help" });
     help.append(this.icon("info"));
-    this.help = this.element("div", { id: "arc-command-help", hidden: "" }, "Recent open tabs appear first. Type to find a tab or search. ↑/↓ selects; Enter opens; Esc closes. Drag the search icon to move; double-click it to center. Position lasts until Zen closes.");
+    this.help = this.element("div", { id: "arc-command-help", hidden: "" }, "Recent open tabs appear first. Type to find a tab, visited page, or search. ↑/↓ selects; Enter opens; Esc closes. Drag the search icon to move; double-click it to center. Position lasts until Zen closes.");
     this.listen(help, "click", () => { this.help.hidden = !this.help.hidden; help.setAttribute("aria-expanded", String(!this.help.hidden)); this.constrainPosition(); });
     inputWrap.append(searchMark, input, help);
     dialog.append(inputWrap, list, this.help, status);
@@ -131,8 +137,12 @@ class ArcBar {
       this.constrainPosition();
     });
     this.listen(this.win, "resize", () => { if (this.opened) this.constrainPosition(); });
-    this.listen(input, "input", () => { if (!this.composing) this.refresh(); });
-    this.listen(input, "compositionstart", () => { this.composing = true; });
+    this.listen(input, "input", e => {
+      this.completion = null;
+      this.allowInline = !e.inputType?.startsWith("delete");
+      if (!this.composing) this.refresh();
+    });
+    this.listen(input, "compositionstart", () => { this.composing = true; this.cancelHistory(); });
     this.listen(input, "compositionend", () => { this.composing = false; if (this.opened) this.refresh(); });
     this.listen(dialog, "keydown", this.onInputKey, true);
     this.listen(dialog, "cancel", e => { e.preventDefault(); this.close(); });
@@ -234,21 +244,83 @@ class ArcBar {
     }
     this.index = records; this.dirty = false;
   }
+  cancelHistory() {
+    if (this.historyTimer !== null) this.win.clearTimeout(this.historyTimer);
+    this.historyTimer = null;
+    this.historyRequest = null;
+  }
+  historyEnabled() {
+    return this.settings.historySuggestions && !this.context.isPrivate &&
+      this.services.prefs.getBoolPref("browser.urlbar.suggest.history", true);
+  }
+  setHistoryQuery(query) {
+    const term = query.trim();
+    if (!this.historyEnabled() || term.length < Math.max(2, this.settings.minQueryLength) || term.length > 256) {
+      this.cancelHistory();
+      return;
+    }
+    if (this.historyRequest?.query === query) return;
+    this.cancelHistory();
+    this.historyRequest = { query, term, ready: false, results: [] };
+    this.historyTimer = this.win.setTimeout(() => {
+      this.historyTimer = null;
+      void this.runHistory();
+    }, 95);
+  }
+  async runHistory() {
+    const request = this.historyRequest;
+    if (this.historyRunning || !request || request.ready) return;
+    const alive = () => this.opened && !this.busy && !this.composing && request === this.historyRequest && this.historyEnabled();
+    if (!alive()) return;
+    this.historyRunning = true;
+    try {
+      request.results = await lookupHistory(this.getPlaces(), request.term, alive);
+    } catch {
+      // Places unavailable: keep tabs/search. Never log URL, title, or query.
+    } finally {
+      this.historyRunning = false;
+      request.ready = true;
+      if (alive()) this.refresh();
+      if (request !== this.historyRequest && this.historyTimer === null) void this.runHistory();
+    }
+  }
+  clearCompletion() {
+    if (!this.completion) return;
+    const { query, value } = this.completion;
+    this.completion = null;
+    if (this.input.value === value) this.input.value = query;
+  }
+  updateCompletion(query) {
+    const fill = !this.model.manual && this.model.selected?.type === "history" ? this.model.selected.inline : "";
+    if (this.completion?.value === fill) return;
+    this.clearCompletion();
+    if (!fill || this.document.activeElement !== this.input ||
+        this.input.selectionStart !== query.length || this.input.selectionEnd !== query.length) return;
+    this.input.value = fill;
+    this.input.setSelectionRange(query.length, fill.length);
+    this.completion = { query, value: fill };
+  }
   refresh() {
     if (!this.opened || this.busy || this.composing) return;
+    const query = this.completion?.query ?? this.input.value;
+    this.setHistoryQuery(query);
+    let matches = [], failed = false;
     try {
       if (this.dirty) this.rebuildIndex();
       const context = {
         spaceId: this.win.gZenWorkspaces?.activeWorkspace || "", windowId: this.getWindowId(this.win),
         selectedId: this.ids.get(this.win.gBrowser.selectedTab),
       };
-      const matches = this.input.value.trim() ? rankTabs(this.input.value, this.index, this.settings, context) : recentTabs(this.index, this.settings, context);
-      this.model.update(this.input.value, makeActions(this.input.value, matches, this.settings));
-      this.render();
-    } catch {
-      this.model.update(this.input.value, makeActions(this.input.value, [], this.settings));
-      this.render(); this.warn("Tab index unavailable. Search and direct navigation remain available.");
-    }
+      matches = query.trim() ? rankTabs(query, this.index, this.settings, context) : recentTabs(this.index, this.settings, context);
+    } catch { failed = true; }
+    const actions = makeActions(query, matches, this.settings);
+    const promote = this.allowInline && this.services.prefs.getBoolPref("browser.urlbar.autoFill", true) &&
+      this.document.activeElement === this.input && (this.completion ||
+        (this.input.selectionStart === query.length && this.input.selectionEnd === query.length));
+    this.model.update(query, addHistoryActions(query, actions, this.historyRequest?.results ?? [], this.settings, promote));
+    this.updateCompletion(query);
+    this.render();
+    if (failed) this.warn("Tab index unavailable. Search and direct navigation remain available.");
   }
   render() {
     this.list.replaceChildren();
@@ -258,10 +330,11 @@ class ArcBar {
         "aria-selected": String(index === this.model.index), "data-action": action.type,
       });
       const leading = this.element("span", { class: "arc-kind", "aria-hidden": "true" });
-      if (action.type === "tab" && /^https?:\/\//iu.test(action.tab.url)) {
+      const iconURL = action.type === "tab" ? action.tab.url : action.type === "history" ? action.iconURL : "";
+      if (/^https?:\/\//iu.test(iconURL)) {
         // Gecko's page-icon protocol reads its local favicon cache, not the site.
         const fallback = this.icon("tab");
-        const image = this.element("img", { class: "arc-favicon", src: `page-icon:${action.tab.url}`, alt: "", referrerpolicy: "no-referrer" });
+        const image = this.element("img", { class: "arc-favicon", src: `page-icon:${iconURL}`, alt: "", referrerpolicy: "no-referrer" });
         image.addEventListener("error", () => image.replaceWith(fallback), { once: true });
         leading.append(image);
       }
@@ -273,12 +346,13 @@ class ArcBar {
       text.append(this.element("span", { class: "arc-label", dir: "auto" }, displayLabel));
       const sub = action.type === "tab" ?
         `${action.tab.spaceName} · Container ${action.tab.containerId}${action.tab.win !== this.win ? " · Other window" : ""}${action.tab.discarded ? " · Unloaded" : ""} · ${action.tab.url}` :
-        action.type === "search" ? "New tab · Active Space container" : "New tab · Direct navigation";
+        action.type === "search" ? "New tab · Active Space container" : action.type === "history" ? `History · ${action.address} · Active Space container` : "New tab · Direct navigation";
       // Keep full Space/container identity available to assistive tech and hover,
       // without turning each compact Arc-like row into two lines of debug data.
       row.title = `${action.label} — ${sub}`;
       row.setAttribute("aria-label", `${action.label}. ${sub}`);
-      const context = action.type === "search" ? `— ${this.settings.searchEngine || "Default engine"}` : "";
+      const context = action.type === "search" ? `— ${this.settings.searchEngine || "Default engine"}` :
+        action.type === "history" && action.label !== action.address ? `— ${action.address}` : "";
       if (context) text.append(this.element("span", { class: "arc-sub", dir: "auto" }, context));
       row.append(text);
       row.append(this.element("span", { class: "arc-action", "aria-hidden": "true" }, action.type === "tab" ? "Switch to Tab" : action.type === "search" ? "Search" : "Open"));
@@ -321,7 +395,7 @@ class ArcBar {
     if (event.target !== this.input) return;
     if (this.busy || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault(); event.stopPropagation(); this.model.move(event.key === "ArrowDown" ? 1 : -1); this.render();
+      event.preventDefault(); event.stopPropagation(); this.clearCompletion(); this.model.move(event.key === "ArrowDown" ? 1 : -1); this.render();
     } else if (event.key === "Enter") {
       event.preventDefault(); event.stopPropagation(); void this.execute();
     }
@@ -359,6 +433,7 @@ class ArcBar {
   close(restoreFocus = true) {
     if (!this.opened) return;
     this.opened = false; this.generation++; this.busy = false; this.composing = false;
+    this.cancelHistory(); this.completion = null; this.allowInline = false;
     this.endDrag(); this.help.hidden = true;
     this.dialog.querySelector(".arc-info").setAttribute("aria-expanded", "false");
     for (const cleanup of this.sessionCleanups.splice(0)) cleanup();
@@ -392,7 +467,8 @@ function bootstrap() {
   win.ArcCommandBar?.destroy();
   const { PrivateBrowsingUtils } = ChromeUtils.importESModule("resource://gre/modules/PrivateBrowsingUtils.sys.mjs");
   const { SearchService } = ChromeUtils.importESModule("moz-src:///toolkit/components/search/SearchService.sys.mjs");
-  const app = new ArcBar(win, Services, PrivateBrowsingUtils, SearchService);
+  const app = new ArcBar(win, Services, PrivateBrowsingUtils, SearchService,
+    () => ChromeUtils.importESModule("resource://gre/modules/PlacesUtils.sys.mjs").PlacesUtils);
   win.ArcCommandBar = app;
   // Called from this .uc.js file, so Sine associates cleanup with its chrome URI.
   win.addUnloadListener(() => app.destroy());

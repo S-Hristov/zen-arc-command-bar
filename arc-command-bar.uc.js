@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Arc Command Bar
-// @version 1.0.2
+// @version 1.1.0
 // @description Tab-first command bar for Zen Beta. Sine required.
 // @include chrome://browser/content/browser.xhtml
 // ==/UserScript==
@@ -10,7 +10,7 @@
 const ARC_STYLE = "/* Arc-inspired macOS command surface. No rules target Zen's own UI. */\n#arc-command-bar {\n  --arc-surface: light-dark(rgb(248 248 250 / .84), rgb(24 24 24 / .84));\n  --arc-text: light-dark(#292a2e, #ceced0);\n  --arc-muted: light-dark(#949498, #96969f);\n  --arc-rule: light-dark(#0000000c, #ffffff0a);\n  --arc-selection: light-dark(#444143, #363333e8);\n  color-scheme: light dark;\n  background: var(--arc-surface);\n  backdrop-filter: blur(18px) saturate(1.1);\n  color: var(--arc-text);\n  border: 1px solid light-dark(#00000035, #ffffff24);\n  border-radius: 13px;\n  box-shadow: 0 24px 80px #00000030, 0 5px 18px #00000012, inset 0 1px 0 #ffffff15;\n  width: min(720px, calc(100vw - 64px));\n  max-height: calc(100vh - 16px);\n  box-sizing: border-box;\n  padding: 0;\n  position: fixed;\n  top: 18vh;\n  left: 50%;\n  transform: translateX(-50%);\n  margin: 0;\n  z-index: 2147483001;\n  overflow: hidden;\n  font: 13px -apple-system, BlinkMacSystemFont, system-ui, sans-serif;\n}\n#arc-command-backdrop { position: fixed; inset: 0; background: transparent; z-index: 2147483000; }\n#arc-command-backdrop[hidden] { display: none; }\n#arc-command-bar .arc-input-wrap { display: flex; align-items: center; gap: 10px; min-height: 55px; padding: 0 14px; }\n#arc-command-bar .arc-search-mark { flex: 0 0 26px; width: 26px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--arc-text); }\n#arc-command-bar .arc-drag-handle, #arc-command-bar .arc-info { appearance: none; border: 0; padding: 0; margin: 0; background: transparent; color: inherit; box-shadow: none; }\n#arc-command-bar .arc-drag-handle { cursor: grab; touch-action: none; user-select: none; }\n#arc-command-bar[data-dragging] .arc-drag-handle { cursor: grabbing; }\n#arc-command-bar .arc-info { display: flex; align-items: center; justify-content: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; background: light-dark(#0000000a,#00000090); color: var(--arc-muted); cursor: pointer; }\n#arc-command-bar .arc-drag-handle:focus-visible, #arc-command-bar .arc-info:focus-visible { outline: 2px solid light-dark(#555,#bbb); outline-offset: 2px; border-radius: 4px; }\n#arc-command-bar .arc-svg { width: 16px; height: 16px; display: block; }\n#arc-command-input { flex: 1; min-width: 0; box-sizing: border-box; border: 0; border-radius: 0; padding: 14px 0; margin: 0; background: transparent; color: inherit; font: 500 18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif; line-height: 26px; outline: none; box-shadow: none; caret-color: var(--arc-text); }\n#arc-command-input::placeholder { color: var(--arc-muted); opacity: .74; }\n#arc-command-input:focus-visible { outline: none; }\n#arc-command-bar .arc-escape { color: var(--arc-muted); background: light-dark(#00000006, #ffffff09); border-radius: 4px; padding: 2px 5px; font-size: 10px; line-height: 16px; }\n#arc-command-results { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; max-height: min(54vh, 438px); margin: 0; padding: 6px 8px 8px; border-top: 1px solid var(--arc-rule); }\n#arc-command-results:empty { display: none; }\n#arc-command-bar .arc-row { display: flex; align-items: center; gap: 10px; min-height: 46px; box-sizing: border-box; padding: 8px 10px; border-radius: 6px; cursor: default; min-width: 0; }\n#arc-command-bar .arc-row[aria-selected=\"true\"] { background: var(--arc-selection); color: #fff; }\n#arc-command-bar .arc-kind { flex: 0 0 23px; width: 23px; height: 23px; display: flex; align-items: center; justify-content: center; color: var(--arc-muted); }\n#arc-command-bar .arc-row[aria-selected=\"true\"] .arc-kind { color: #ffffffdb; }\n#arc-command-bar .arc-google { color: #4285f4; background: light-dark(#ffffff, #ffffffed); border-radius: 4px; font: 700 16px Arial, sans-serif; width: 21px; height: 21px; display: flex; align-items: center; justify-content: center; }\n#arc-command-bar .arc-favicon { display: block; width: 20px; height: 20px; object-fit: contain; border-radius: 4px; }\n#arc-command-help { padding: 12px 20px; border-top: 1px solid var(--arc-rule); color: var(--arc-muted); font-size: 12px; line-height: 1.5; }\n#arc-command-help[hidden] { display: none; }\n#arc-command-bar .arc-text { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1; }\n#arc-command-bar .arc-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; line-height: 20px; font-weight: 500; }\n#arc-command-bar .arc-row[aria-selected=\"true\"] .arc-label { font-weight: 600; }\n#arc-command-bar .arc-sub { font-size: 12px; color: var(--arc-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 34%; }\n#arc-command-bar .arc-row[aria-selected=\"true\"] .arc-sub { color: #ffffffad; }\n#arc-command-bar .arc-action { color: var(--arc-muted); font-weight: 500; font-size: 11px; white-space: nowrap; margin-left: 5px; }\n#arc-command-bar .arc-row[aria-selected=\"true\"] .arc-action { color: #fffffff0; font-weight: 600; }\n#arc-command-bar .arc-enter { display: flex; align-items: center; justify-content: center; flex: 0 0 22px; width: 22px; height: 22px; border-radius: 4px; background: light-dark(#00000005, #ffffff09); color: var(--arc-muted); }\n#arc-command-bar .arc-row[aria-selected=\"true\"] .arc-enter { background: #fffffff2; color: var(--arc-selection); }\n/* Live announcements stay available without adding dashboard-style footer chrome. */\n#arc-command-bar .arc-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }\n#arc-command-bar .arc-status[data-state=\"error\"], #arc-command-bar .arc-status[data-state=\"busy\"] { position: static; width: auto; height: auto; margin: 0; padding: 10px 20px 13px; overflow: visible; clip-path: none; white-space: normal; color: var(--arc-muted); font-size: 12px; border-top: 1px solid var(--arc-rule); }\n#arc-command-bar .arc-status[data-state=\"error\"] { color: light-dark(#9a3434, #f3a6a6); }\n@media (max-width: 680px) {\n  #arc-command-bar { width: calc(100vw - 24px); top: 12vh; }\n  #arc-command-bar .arc-action { font-size: 10px; }\n  #arc-command-bar .arc-sub { display: none; }\n}\n@media (forced-colors: active) {\n  #arc-command-bar { background: Canvas; backdrop-filter: none; color: CanvasText; border: 1px solid CanvasText; }\n  #arc-command-input { color: CanvasText; caret-color: CanvasText; }\n  #arc-command-bar .arc-row[aria-selected=\"true\"] { background: Highlight; color: HighlightText; }\n  #arc-command-bar .arc-row[aria-selected=\"true\"] .arc-enter { background: Canvas; color: CanvasText; }\n}\n";
 // Pure matching and action model. No browser APIs, network, or persisted history.
 const DEFAULTS = Object.freeze({
-  enabled: true, tabFirst: true, allSpaces: false, minQueryLength: 2,
+  enabled: true, tabFirst: true, allSpaces: false, historySuggestions: true, minQueryLength: 2,
   fuzzy: true, exactMatches: true, currentSpaceFirst: true,
   includeDiscarded: true, debug: false, maxResults: 8, minScore: 80,
   ambiguityGap: 8, searchEngine: "Google",
@@ -240,7 +240,7 @@ function newTabContext(win) {
 
 async function submitAction(win, action, context, services, isAlive = () => true) {
   let url, postData = null;
-  if (action.type === "url") url = action.url;
+  if (action.type === "url" || action.type === "history") url = action.url;
   else if (action.type === "search") {
     await services.search.init();
     if (!isAlive()) return;
@@ -266,16 +266,98 @@ async function submitAction(win, action, context, services, isAlive = () => true
   });
 }
 
+// Read-only, local Places history. The fixed candidate window bounds SQLite work.
+const HISTORY_LIMIT = 8;
+const HISTORY_SQL = `
+  WITH recent AS MATERIALIZED (
+    SELECT url, title, visit_count, hidden, last_visit_date
+    FROM moz_places
+    WHERE last_visit_date IS NOT NULL
+    ORDER BY last_visit_date DESC
+    LIMIT 5000
+  ), pages AS (
+    SELECT *, CASE WHEN substr(url, 1, 8) = 'https://' THEN substr(url, 9) ELSE substr(url, 8) END AS address
+    FROM recent
+    WHERE visit_count > 0 AND hidden = 0 AND (substr(url, 1, 8) = 'https://' OR substr(url, 1, 7) = 'http://')
+  )
+  SELECT url, title FROM pages
+  WHERE instr(lower(address), lower(:term)) > 0 OR instr(lower(title), lower(:term)) > 0
+  ORDER BY CASE WHEN instr(lower(address), lower(:term)) = 1
+                 OR (substr(address, 1, 4) = 'www.' AND instr(lower(substr(address, 5)), lower(:term)) = 1)
+                THEN 0 ELSE 1 END, last_visit_date DESC, url
+  LIMIT :limit
+`;
+
+async function lookupHistory(places, term, alive) {
+  const db = await places.promiseDBConnection();
+  if (!alive()) return [];
+  const rows = await db.executeCached(HISTORY_SQL, { term, limit: HISTORY_LIMIT * 2 });
+  if (!alive()) return [];
+  return rows.flatMap(row => {
+    try {
+      const url = new URL(row.getResultByName("url"));
+      if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return [];
+      return [{ url: url.href, title: row.getResultByName("title") || "" }];
+    } catch { return []; }
+  });
+}
+
+function historyInline(query, href) {
+  if (!query || /\s/u.test(query)) return "";
+  const url = new URL(href);
+  if (url.search || url.hash) return "";
+  const address = url.host + url.pathname;
+  for (const candidate of [address, address.replace(/^www\./u, "")]) {
+    const hostEnd = candidate.indexOf("/");
+    const hostLength = hostEnd < 0 ? candidate.length : hostEnd;
+    if (candidate.length > query.length &&
+        candidate.slice(0, Math.min(query.length, hostLength)).toLowerCase() === query.slice(0, hostLength).toLowerCase() &&
+        candidate.slice(hostLength, Math.max(hostLength, query.length)) === query.slice(hostLength)) {
+      return query + candidate.slice(query.length);
+    }
+  }
+  return "";
+}
+
+function addHistoryActions(query, actions, matches, settings, promote = true) {
+  if (!matches.length || !query.trim()) return actions;
+  const seen = new Set(actions.flatMap(action => {
+    try { return [new URL(action.tab?.url ?? action.url).href]; } catch { return []; }
+  }));
+  const history = [];
+  for (const match of matches) {
+    if (seen.has(match.url)) continue;
+    seen.add(match.url);
+    const url = new URL(match.url);
+    const address = url.host + url.pathname;
+    history.push({
+      type: "history", id: "history:" + match.url, url: match.url,
+      label: match.title || address, address, iconURL: url.origin + url.pathname, inline: historyInline(query, match.url),
+    });
+    if (history.length >= Math.min(HISTORY_LIMIT, settings.maxResults)) break;
+  }
+  // Never replace a confident tab switch or the exact address the user entered.
+  // A URL prefix is a stronger intent signal than a title-only history match.
+  if (promote && actions[0]?.type === "search") {
+    const index = history.findIndex(action => action.inline);
+    if (index >= 0) return [history[index], actions[0], ...actions.slice(1), ...history.filter((_, i) => i !== index)];
+  }
+  return [...actions, ...history];
+}
+
 
 class ArcBar {
-  constructor(win, services, privateUtils, searchService) {
+  constructor(win, services, privateUtils, searchService, getPlaces) {
     this.win = win; this.services = services; this.privateUtils = privateUtils;
     this.navigationServices = { search: searchService, scriptSecurityManager: services.scriptSecurityManager };
+    this.getPlaces = getPlaces;
     this.document = win.document; this.model = new SelectionModel();
     this.disposed = false; this.opened = false; this.busy = false; this.composing = false;
     this.generation = 0; this.ids = new WeakMap(); this.nextId = 0; this.windowIds = new WeakMap(); this.nextWindowId = 0;
     this.cleanups = []; this.sessionCleanups = []; this.index = []; this.dirty = true;
     this.position = null; this.drag = null;
+    this.historyRequest = null; this.historyTimer = null; this.historyRunning = false;
+    this.completion = null; this.allowInline = false;
     this.onCommand = this.onCommand.bind(this); this.onInputKey = this.onInputKey.bind(this);
     this.settings = this.readSettings();
   }
@@ -308,8 +390,10 @@ class ArcBar {
       if (!this.settings.enabled) this.close();
       else if (this.opened) this.refresh();
     } };
-    this.services.prefs.addObserver("arc-command-bar.", observer);
-    this.cleanups.push(() => this.services.prefs.removeObserver("arc-command-bar.", observer));
+    for (const pref of ["arc-command-bar.", "browser.urlbar.suggest.history", "browser.urlbar.autoFill"]) {
+      this.services.prefs.addObserver(pref, observer);
+      this.cleanups.push(() => this.services.prefs.removeObserver(pref, observer));
+    }
   }
   onCommand(event) {
     // Honor Zen/Firefox's native key dispatch and about:keyboard customization.
@@ -356,14 +440,14 @@ class ArcBar {
     const input = this.element("input", {
       id: "arc-command-input", type: "text", role: "combobox", autocomplete: "off",
       spellcheck: "false", "aria-label": "Find a tab, search, or enter a URL",
-      "aria-autocomplete": "list", "aria-expanded": "true", "aria-controls": "arc-command-results",
+      "aria-autocomplete": "both", "aria-expanded": "true", "aria-controls": "arc-command-results",
       placeholder: "Search or Enter URL…",
     });
     const list = this.element("div", { id: "arc-command-results", role: "listbox", "aria-label": "Actions" });
     const status = this.element("div", { class: "arc-status", role: "status", "aria-live": "polite" }, "Type to find an open tab. No new tab until you navigate.");
     const help = this.element("button", { type: "button", class: "arc-info", "aria-label": "Command bar help", "aria-expanded": "false", "aria-controls": "arc-command-help" });
     help.append(this.icon("info"));
-    this.help = this.element("div", { id: "arc-command-help", hidden: "" }, "Recent open tabs appear first. Type to find a tab or search. ↑/↓ selects; Enter opens; Esc closes. Drag the search icon to move; double-click it to center. Position lasts until Zen closes.");
+    this.help = this.element("div", { id: "arc-command-help", hidden: "" }, "Recent open tabs appear first. Type to find a tab, visited page, or search. ↑/↓ selects; Enter opens; Esc closes. Drag the search icon to move; double-click it to center. Position lasts until Zen closes.");
     this.listen(help, "click", () => { this.help.hidden = !this.help.hidden; help.setAttribute("aria-expanded", String(!this.help.hidden)); this.constrainPosition(); });
     inputWrap.append(searchMark, input, help);
     dialog.append(inputWrap, list, this.help, status);
@@ -397,8 +481,12 @@ class ArcBar {
       this.constrainPosition();
     });
     this.listen(this.win, "resize", () => { if (this.opened) this.constrainPosition(); });
-    this.listen(input, "input", () => { if (!this.composing) this.refresh(); });
-    this.listen(input, "compositionstart", () => { this.composing = true; });
+    this.listen(input, "input", e => {
+      this.completion = null;
+      this.allowInline = !e.inputType?.startsWith("delete");
+      if (!this.composing) this.refresh();
+    });
+    this.listen(input, "compositionstart", () => { this.composing = true; this.cancelHistory(); });
     this.listen(input, "compositionend", () => { this.composing = false; if (this.opened) this.refresh(); });
     this.listen(dialog, "keydown", this.onInputKey, true);
     this.listen(dialog, "cancel", e => { e.preventDefault(); this.close(); });
@@ -500,21 +588,83 @@ class ArcBar {
     }
     this.index = records; this.dirty = false;
   }
+  cancelHistory() {
+    if (this.historyTimer !== null) this.win.clearTimeout(this.historyTimer);
+    this.historyTimer = null;
+    this.historyRequest = null;
+  }
+  historyEnabled() {
+    return this.settings.historySuggestions && !this.context.isPrivate &&
+      this.services.prefs.getBoolPref("browser.urlbar.suggest.history", true);
+  }
+  setHistoryQuery(query) {
+    const term = query.trim();
+    if (!this.historyEnabled() || term.length < Math.max(2, this.settings.minQueryLength) || term.length > 256) {
+      this.cancelHistory();
+      return;
+    }
+    if (this.historyRequest?.query === query) return;
+    this.cancelHistory();
+    this.historyRequest = { query, term, ready: false, results: [] };
+    this.historyTimer = this.win.setTimeout(() => {
+      this.historyTimer = null;
+      void this.runHistory();
+    }, 95);
+  }
+  async runHistory() {
+    const request = this.historyRequest;
+    if (this.historyRunning || !request || request.ready) return;
+    const alive = () => this.opened && !this.busy && !this.composing && request === this.historyRequest && this.historyEnabled();
+    if (!alive()) return;
+    this.historyRunning = true;
+    try {
+      request.results = await lookupHistory(this.getPlaces(), request.term, alive);
+    } catch {
+      // Places unavailable: keep tabs/search. Never log URL, title, or query.
+    } finally {
+      this.historyRunning = false;
+      request.ready = true;
+      if (alive()) this.refresh();
+      if (request !== this.historyRequest && this.historyTimer === null) void this.runHistory();
+    }
+  }
+  clearCompletion() {
+    if (!this.completion) return;
+    const { query, value } = this.completion;
+    this.completion = null;
+    if (this.input.value === value) this.input.value = query;
+  }
+  updateCompletion(query) {
+    const fill = !this.model.manual && this.model.selected?.type === "history" ? this.model.selected.inline : "";
+    if (this.completion?.value === fill) return;
+    this.clearCompletion();
+    if (!fill || this.document.activeElement !== this.input ||
+        this.input.selectionStart !== query.length || this.input.selectionEnd !== query.length) return;
+    this.input.value = fill;
+    this.input.setSelectionRange(query.length, fill.length);
+    this.completion = { query, value: fill };
+  }
   refresh() {
     if (!this.opened || this.busy || this.composing) return;
+    const query = this.completion?.query ?? this.input.value;
+    this.setHistoryQuery(query);
+    let matches = [], failed = false;
     try {
       if (this.dirty) this.rebuildIndex();
       const context = {
         spaceId: this.win.gZenWorkspaces?.activeWorkspace || "", windowId: this.getWindowId(this.win),
         selectedId: this.ids.get(this.win.gBrowser.selectedTab),
       };
-      const matches = this.input.value.trim() ? rankTabs(this.input.value, this.index, this.settings, context) : recentTabs(this.index, this.settings, context);
-      this.model.update(this.input.value, makeActions(this.input.value, matches, this.settings));
-      this.render();
-    } catch {
-      this.model.update(this.input.value, makeActions(this.input.value, [], this.settings));
-      this.render(); this.warn("Tab index unavailable. Search and direct navigation remain available.");
-    }
+      matches = query.trim() ? rankTabs(query, this.index, this.settings, context) : recentTabs(this.index, this.settings, context);
+    } catch { failed = true; }
+    const actions = makeActions(query, matches, this.settings);
+    const promote = this.allowInline && this.services.prefs.getBoolPref("browser.urlbar.autoFill", true) &&
+      this.document.activeElement === this.input && (this.completion ||
+        (this.input.selectionStart === query.length && this.input.selectionEnd === query.length));
+    this.model.update(query, addHistoryActions(query, actions, this.historyRequest?.results ?? [], this.settings, promote));
+    this.updateCompletion(query);
+    this.render();
+    if (failed) this.warn("Tab index unavailable. Search and direct navigation remain available.");
   }
   render() {
     this.list.replaceChildren();
@@ -524,10 +674,11 @@ class ArcBar {
         "aria-selected": String(index === this.model.index), "data-action": action.type,
       });
       const leading = this.element("span", { class: "arc-kind", "aria-hidden": "true" });
-      if (action.type === "tab" && /^https?:\/\//iu.test(action.tab.url)) {
+      const iconURL = action.type === "tab" ? action.tab.url : action.type === "history" ? action.iconURL : "";
+      if (/^https?:\/\//iu.test(iconURL)) {
         // Gecko's page-icon protocol reads its local favicon cache, not the site.
         const fallback = this.icon("tab");
-        const image = this.element("img", { class: "arc-favicon", src: `page-icon:${action.tab.url}`, alt: "", referrerpolicy: "no-referrer" });
+        const image = this.element("img", { class: "arc-favicon", src: `page-icon:${iconURL}`, alt: "", referrerpolicy: "no-referrer" });
         image.addEventListener("error", () => image.replaceWith(fallback), { once: true });
         leading.append(image);
       }
@@ -539,12 +690,13 @@ class ArcBar {
       text.append(this.element("span", { class: "arc-label", dir: "auto" }, displayLabel));
       const sub = action.type === "tab" ?
         `${action.tab.spaceName} · Container ${action.tab.containerId}${action.tab.win !== this.win ? " · Other window" : ""}${action.tab.discarded ? " · Unloaded" : ""} · ${action.tab.url}` :
-        action.type === "search" ? "New tab · Active Space container" : "New tab · Direct navigation";
+        action.type === "search" ? "New tab · Active Space container" : action.type === "history" ? `History · ${action.address} · Active Space container` : "New tab · Direct navigation";
       // Keep full Space/container identity available to assistive tech and hover,
       // without turning each compact Arc-like row into two lines of debug data.
       row.title = `${action.label} — ${sub}`;
       row.setAttribute("aria-label", `${action.label}. ${sub}`);
-      const context = action.type === "search" ? `— ${this.settings.searchEngine || "Default engine"}` : "";
+      const context = action.type === "search" ? `— ${this.settings.searchEngine || "Default engine"}` :
+        action.type === "history" && action.label !== action.address ? `— ${action.address}` : "";
       if (context) text.append(this.element("span", { class: "arc-sub", dir: "auto" }, context));
       row.append(text);
       row.append(this.element("span", { class: "arc-action", "aria-hidden": "true" }, action.type === "tab" ? "Switch to Tab" : action.type === "search" ? "Search" : "Open"));
@@ -587,7 +739,7 @@ class ArcBar {
     if (event.target !== this.input) return;
     if (this.busy || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault(); event.stopPropagation(); this.model.move(event.key === "ArrowDown" ? 1 : -1); this.render();
+      event.preventDefault(); event.stopPropagation(); this.clearCompletion(); this.model.move(event.key === "ArrowDown" ? 1 : -1); this.render();
     } else if (event.key === "Enter") {
       event.preventDefault(); event.stopPropagation(); void this.execute();
     }
@@ -625,6 +777,7 @@ class ArcBar {
   close(restoreFocus = true) {
     if (!this.opened) return;
     this.opened = false; this.generation++; this.busy = false; this.composing = false;
+    this.cancelHistory(); this.completion = null; this.allowInline = false;
     this.endDrag(); this.help.hidden = true;
     this.dialog.querySelector(".arc-info").setAttribute("aria-expanded", "false");
     for (const cleanup of this.sessionCleanups.splice(0)) cleanup();
@@ -658,7 +811,8 @@ function bootstrap() {
   win.ArcCommandBar?.destroy();
   const { PrivateBrowsingUtils } = ChromeUtils.importESModule("resource://gre/modules/PrivateBrowsingUtils.sys.mjs");
   const { SearchService } = ChromeUtils.importESModule("moz-src:///toolkit/components/search/SearchService.sys.mjs");
-  const app = new ArcBar(win, Services, PrivateBrowsingUtils, SearchService);
+  const app = new ArcBar(win, Services, PrivateBrowsingUtils, SearchService,
+    () => ChromeUtils.importESModule("resource://gre/modules/PlacesUtils.sys.mjs").PlacesUtils);
   win.ArcCommandBar = app;
   // Called from this .uc.js file, so Sine associates cleanup with its chrome URI.
   win.addUnloadListener(() => app.destroy());
